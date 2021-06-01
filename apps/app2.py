@@ -1,7 +1,7 @@
 import dash_core_components as dcc
 import dash_html_components as html
 import init_db
-from dash.dependencies import Output, Input
+from dash.dependencies import Output, Input, State
 import plotly
 from app import app
 import dash
@@ -31,10 +31,8 @@ layout = html.Div(children=[
     dt.DataTable(id='Table',
                  columns=[{"name": i, "id": i} for i in df.columns],
                  #data=df.to_dict('records'),
-
                  style_cell_conditional=[
                      {
-
                          'textAlign': 'left'
                      }
                  ],
@@ -45,11 +43,25 @@ layout = html.Div(children=[
                 page_current=0,
                 page_size=PAGE_SIZE,
                 page_action='custom',
+                editable=True,
+                row_deletable=True
                 #filter_action='custom',
                 #filter_query='',
-                )
+                ),
+    #html.Button('Add Row', id='editing-rows-button', n_clicks=0),
 
 ])
+
+#@app.callback(
+#    Output('Table', 'data'),
+#    Input('editing-rows-button', 'n_clicks'),
+#    State('Table', 'data'),
+#    State('Table', 'columns'))
+#def add_row(n_clicks, rows, columns):
+#    if n_clicks > 0:
+#        rows.append({c['id']: '' for c in columns})
+#    return rows
+
 
 operators = [['ge ', '>='],
              ['le ', '<='],
@@ -59,6 +71,8 @@ operators = [['ge ', '>='],
              ['eq ', '='],
              ['contains '],
              ['datestartswith ']]
+
+
 
 def split_filter_part(filter_part):
     for operator_type in operators:
@@ -99,9 +113,11 @@ def update_output(value):
     Input('Table', "page_current"),
     Input('Table', "page_size"),
     Input('dropdown', 'value'),
+    #   Input('editing-rows-button', 'n_clicks'),
     #Input('Table', "filter_query")
 )
 def update_table(page_current,page_size,filter ): #filter
+
     if filter:
         filter = f"{'{Class}'} contains '{filter}'"
         print(filter)

@@ -1,14 +1,13 @@
 
 #server settings
 server = 'smtp.mail.ru'
-#user = 'org.komitet@solncesvet.ru'
-#password ='zOQZ3q12puDsyn6XvmiX'
+#user = 
+#password =
+#user = 
+#password = 
 
-#user = 'di_myasnikov@mail.ru'
-#password = 'AGM3eKmy77RXGFn45FXl'
-
-user = 'pupkin_vad@mail.ru'
-password = 'agd8pzhBmuJRa3VbiHFw'
+user = 
+password = 
 sender = 'example@mail.ru'
 subject = 'Тема сообщения'
 text = 'Текст сообщения'

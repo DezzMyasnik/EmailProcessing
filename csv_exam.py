@@ -1,18 +1,18 @@
 import email
-
+import email.utils
+import time
 import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.pipeline import Pipeline
-
-import settings
+from settings import *
 from recive_mail import email_text_extract
 from recive_mail import exctaract_email, get_first_text_block
 
 
 def clean_df(df):
-    df = df.loc[~df['from'].isin(settings.droped_emails)]
+    df = df.loc[~df['from'].isin(droped_emails)]
 
     return df
 
@@ -44,23 +44,26 @@ def my_custom_loss_func(y_true, y_pred):
 
 
 def get_class_of_email(item, post, text_clf):
-    # result, data = post.fetch(item, "(RFC822)")  # Получаем тело письма (RFC822) для данного ID
-    e_id = item.decode('utf-8')
-    _, response = post.uid('fetch', e_id, '(RFC822)')
-    raw_email = response[0][1]
-    raw_email_string = raw_email.decode('utf-8', errors='replace')
+    _, response = post.uid('fetch', item.decode('utf-8'), '(RFC822)')
+    raw_email_string = response[0][1].decode('utf-8', errors='replace')
     email_message = email.message_from_string(raw_email_string)
-    to = item.decode('utf-8')
+    dt_email_tz =email.utils.parsedate_to_datetime(email_message['Date'])
     from_ = exctaract_email(email_message['From'])
-    if from_ in settings.droped_emails:
-        predicted = ['nonreplay emails']
-        return predicted, from_
     payload = get_first_text_block(email_message)
-    if from_ == 'org.komitet@solncesvet.ru':
+
+    if from_ in droped_emails:
+        predicted = ['nonreplay emails']
+        return predicted, from_, dt_email_tz, payload
+    if payload == '' or payload == None or payload == ' ':
+        predicted = ['Только вложения']
+        return predicted, from_, dt_email_tz, payload
+    if from_ == EMAIL_FROM_FORM:
         payload, from_ = email_text_extract(payload)
+    if from_ == ' offline-messages@jivosite.com':
+        predicted = ['Из чата сайта']
+        return predicted, from_, dt_email_tz, payload
     if payload != np.nan:
         try:
-
             predicted = text_clf.predict([payload])
         except BaseException as be:
 
@@ -69,7 +72,7 @@ def get_class_of_email(item, post, text_clf):
 
         predicted = None
 
-    return predicted, from_
+    return predicted, from_, dt_email_tz,payload
 
 
 def return_type(email_text, model):

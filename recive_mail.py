@@ -27,6 +27,7 @@ def email_text_extract(post):
         found = re.search(r'Email:(.+?)Тема', post)
         found1 = re.search(r'Емайл:(.+?)Название', post)
         found2 = re.search(r'Email :(.+?)\r  Тема',post)
+        found3 = re.search(r'Email :(.+?) Тема', post)
         if found:
             found = found.group(1)
             email_text = post[post.find('Сообщение: ') + 11:]
@@ -35,6 +36,9 @@ def email_text_extract(post):
             email_text = post[post.find('Название работы: '):]
         elif found2:
             found = found2.group(1)
+            email_text = post[post.find('Тема :'):]
+        elif found3:
+            found = found3.group(1)
             email_text = post[post.find('Тема :'):]
 
 
@@ -90,28 +94,31 @@ def proc_email_from_solncesvet():
     # parsing['cast'] = dat
     print(parsing.head(3))
 
-#Получение текстового
+#Получение текстового сообщения
 def get_first_text_block(email_message_instance):
     returned_text = ''
-    if email_message_instance.is_multipart():
+    if not email_message_instance.is_multipart():
+        returned_text = decode_body(email_message_instance.get_payload(),
+                                    email_message_instance.get('Content-Transfer-Encoding'),
+                                    email_message_instance.get_content_charset())
+    else:
         pyaloads = email_message_instance.get_payload()
-
         for payload in pyaloads:
             maintype = payload.get_content_maintype()
-            disposition  =payload.get_content_disposition()
-            if payload.get_content_maintype() == 'text' and disposition!='attachment':
-                content_charset = payload.get_content_charset()
-                content_transfer_encoding = payload.get('Content-Transfer-Encoding')
-                returned_text = decode_body(payload.get_payload(), content_transfer_encoding, content_charset)
+            disposition = payload.get_content_disposition()
+            if maintype == 'text' and disposition != 'attachment':
+                returned_text = decode_body(payload.get_payload(),
+                                            payload.get('Content-Transfer-Encoding'),
+                                            payload.get_content_charset())
             elif maintype == 'multipart':
-                text =''
-                for item in payload.get_payload():
-                    text = text + get_first_text_block(item)
-                returned_text = text
+                returned_text = ' '.join([get_first_text_block(item) for item in payload.get_payload()])
 
-    else:
-        content_charset = email_message_instance.get_content_charset()
-        content_transfer_encoding = email_message_instance.get('Content-Transfer-Encoding')
-        returned_text = decode_body(email_message_instance.get_payload(), content_transfer_encoding, content_charset)
+                #text = ''
+                #for item in payload.get_payload():
+                #    text = text + get_first_text_block(item)
 
+
+                #returned_text = text
+
+    returned_text = remove_multiple_spaces(remove_multiple_rr(returned_text))
     return returned_text
